@@ -1,0 +1,27 @@
+_BASE_: "Base-DiffusionDet.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+  ROI_HEADS:
+    NUM_CLASSES: 1203  # LVIS
+  DiffusionDet:
+    NUM_PROPOSALS: 500
+    NUM_CLASSES: 1203  # LVIS
+    USE_FED_LOSS: True  # LVIS
+DATASETS:  # LVIS
+  TRAIN: ("lvis_v1_train",)
+  TEST: ("lvis_v1_val",)
+DATALOADER:
+  SAMPLER_TRAIN: "RepeatFactorTrainingSampler"
+  REPEAT_THRESHOLD: 0.001
+SOLVER:
+  STEPS: (210000, 250000)
+  MAX_ITER: 270000
+INPUT:
+  CROP:
+    ENABLED: True
+  FORMAT: "RGB"
+TEST:  # LVIS
+  EVAL_PERIOD: 0  # disable eval during train since long time
