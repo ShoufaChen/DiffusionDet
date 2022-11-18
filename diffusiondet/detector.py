@@ -273,6 +273,16 @@ class DiffusionDet(nn.Module):
                 processed_results.append({"instances": r})
             return processed_results
 
+    # forward diffusion
+    def q_sample(self, x_start, t, noise=None):
+        if noise is None:
+            noise = torch.randn_like(x_start)
+
+        sqrt_alphas_cumprod_t = extract(self.sqrt_alphas_cumprod, t, x_start.shape)
+        sqrt_one_minus_alphas_cumprod_t = extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
+
+        return sqrt_alphas_cumprod_t * x_start + sqrt_one_minus_alphas_cumprod_t * noise
+
     def forward(self, batched_inputs, do_postprocess=True):
         """
         Args:

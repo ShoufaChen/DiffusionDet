@@ -52,13 +52,13 @@ cd ..
 Thanks for model conversion scripts of [ResNet-101](https://github.com/PeizeSun/SparseR-CNN/blob/main/tools/convert-torchvision-to-d2.py)
 and [Swin-Base](https://github.com/facebookresearch/Detic/blob/main/tools/convert-thirdparty-pretrained-model-to-d2.py).
 
-3. Train DiffusionDet
+4. Train DiffusionDet
 ```
 python train_net.py --num-gpus 8 \
     --config-file configs/diffdet.coco.res50.yaml
 ```
 
-4. Evaluate DiffusionDet
+5. Evaluate DiffusionDet
 ```
 python train_net.py --num-gpus 8 \
     --config-file configs/diffdet.coco.res50.yaml \
