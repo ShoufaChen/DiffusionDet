@@ -5,9 +5,9 @@
 ![](teaser.png)
 
 
-> [**DiffusionDet: Diffusion Model for Object Detection**](https://arxiv.org/abs/2211.)               
+> [**DiffusionDet: Diffusion Model for Object Detection**](https://arxiv.org/abs/2211.09788)               
 > [Shoufa Chen](https://www.shoufachen.com/), [Peize Sun](https://peizesun.github.io/), [Yibing Song](https://ybsong00.github.io/), [Ping Luo](http://luoping.me/)                 
-> *[arXiv 2211.](https://arxiv.org/abs/2211.)* 
+> *[arXiv 2211.09788](https://arxiv.org/abs/2211.09788)* 
 
 ## Updates
 - (11/2021) Code is released.
@@ -41,7 +41,7 @@ If you use DiffusionDet in your research or wish to refer to the baseline result
 @article{chen2022diffusiondet,
       title={DiffusionDet: Diffusion Model for Object Detection},
       author={Chen, Shoufa and Sun, Peize and Song, Yibing and Luo, Ping},
-      journal={arXiv preprint arXiv:2211.},
+      journal={arXiv preprint arXiv:2211.09788},
       year={2022}
 }
 ```
