@@ -1,4 +1,4 @@
-## Getting Started with Detectron2
+## Getting Started with DiffusionDet
 
 
 

@@ -10,7 +10,7 @@
 > *[arXiv 2211.09788](https://arxiv.org/abs/2211.09788)* 
 
 ## Updates
-- (11/2021) Code is released.
+- (11/2022) Code is released.
 
 ## Models
 Method | Box AP (1 step) | Box AP (4 step) | Download
