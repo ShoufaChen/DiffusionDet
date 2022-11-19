@@ -71,3 +71,22 @@ python train_net.py --num-gpus 8 \
 
 We also provide the [pretrained model](https://github.com/ShoufaChen/DiffusionDet/releases/download/v0.1/diffdet_coco_res50_300boxes.pth)
 of [DiffusionDet-300boxes](configs/diffdet.coco.res50.300boxes.yaml) that is used for ablation study.
+
+
+### Inference Demo with Pre-trained Models
+We provide a command line tool to run a simple demo following [Detectron2](https://github.com/facebookresearch/detectron2/tree/main/demo#detectron2-demo).
+
+```bash
+python demo.py --config-file configs/diffdet.coco.res50.yaml \
+    --input image.jpg --opts MODEL.WEIGHTS diffdet_coco_res50.pth
+```
+
+We need to specify `MODEL.WEIGHTS` to a model from model zoo for evaluation.
+This command will run the inference and show visualizations in an OpenCV window.
+
+For details of the command line arguments, see `demo.py -h` or look at its source code
+to understand its behavior. Some common arguments are:
+* To run __on your webcam__, replace `--input files` with `--webcam`.
+* To run __on a video__, replace `--input files` with `--video-input video.mp4`.
+* To run __on cpu__, add `MODEL.DEVICE cpu` after `--opts`.
+* To save outputs to a directory (for images) or a file (for webcam or video), use `--output`.
