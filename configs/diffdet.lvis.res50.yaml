@@ -5,12 +5,12 @@ MODEL:
     DEPTH: 50
     STRIDE_IN_1X1: False
   ROI_HEADS:
-    NUM_CLASSES: 1203  # LVIS
+    NUM_CLASSES: 1203 # LVIS
   DiffusionDet:
     NUM_PROPOSALS: 500
-    NUM_CLASSES: 1203  # LVIS
-    USE_FED_LOSS: True  # LVIS
-DATASETS:  # LVIS
+    NUM_CLASSES: 1203 # LVIS
+    USE_FED_LOSS: True # LVIS
+DATASETS: # LVIS
   TRAIN: ("lvis_v1_train",)
   TEST: ("lvis_v1_val",)
 DATALOADER:
@@ -23,5 +23,5 @@ INPUT:
   CROP:
     ENABLED: True
   FORMAT: "RGB"
-TEST:  # LVIS
-  EVAL_PERIOD: 0  # disable eval during train since long time
+TEST: # LVIS
+  EVAL_PERIOD: 0 # disable eval during train since long time

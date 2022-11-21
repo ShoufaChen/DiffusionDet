@@ -20,7 +20,7 @@ def add_diffusiondet_config(cfg):
     cfg.MODEL.DiffusionDet.NHEADS = 8
     cfg.MODEL.DiffusionDet.DROPOUT = 0.0
     cfg.MODEL.DiffusionDet.DIM_FEEDFORWARD = 2048
-    cfg.MODEL.DiffusionDet.ACTIVATION = 'relu'
+    cfg.MODEL.DiffusionDet.ACTIVATION = "relu"
     cfg.MODEL.DiffusionDet.HIDDEN_DIM = 256
     cfg.MODEL.DiffusionDet.NUM_CLS = 1
     cfg.MODEL.DiffusionDet.NUM_REG = 3
@@ -56,7 +56,7 @@ def add_diffusiondet_config(cfg):
 
     # Swin Backbones
     cfg.MODEL.SWIN = CN()
-    cfg.MODEL.SWIN.SIZE = 'B'  # 'T', 'S', 'B'
+    cfg.MODEL.SWIN.SIZE = "B"  # 'T', 'S', 'B'
     cfg.MODEL.SWIN.USE_CHECKPOINT = False
     cfg.MODEL.SWIN.OUT_FEATURES = (0, 1, 2, 3)  # modify
 
@@ -65,13 +65,35 @@ def add_diffusiondet_config(cfg):
     cfg.SOLVER.BACKBONE_MULTIPLIER = 1.0
 
     # TTA.
-    cfg.TEST.AUG.MIN_SIZES = (400, 500, 600, 640, 700, 900, 1000, 1100, 1200, 1300, 1400, 1800, 800)
+    cfg.TEST.AUG.MIN_SIZES = (
+        400,
+        500,
+        600,
+        640,
+        700,
+        900,
+        1000,
+        1100,
+        1200,
+        1300,
+        1400,
+        1800,
+        800,
+    )
     cfg.TEST.AUG.CVPODS_TTA = True
     cfg.TEST.AUG.SCALE_FILTER = True
-    cfg.TEST.AUG.SCALE_RANGES = ([96, 10000], [96, 10000], 
-                                 [64, 10000], [64, 10000],
-                                 [64, 10000], [0, 10000],
-                                 [0, 10000], [0, 256],
-                                 [0, 256], [0, 192],
-                                 [0, 192], [0, 96],
-                                 [0, 10000])
+    cfg.TEST.AUG.SCALE_RANGES = (
+        [96, 10000],
+        [96, 10000],
+        [64, 10000],
+        [64, 10000],
+        [64, 10000],
+        [0, 10000],
+        [0, 10000],
+        [0, 256],
+        [0, 256],
+        [0, 192],
+        [0, 192],
+        [0, 96],
+        [0, 10000],
+    )

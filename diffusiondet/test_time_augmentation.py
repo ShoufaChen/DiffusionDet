@@ -3,35 +3,35 @@
 # ========================================
 # Modified by Rufeng Zhang, Peize Sun
 # Contact: {sunpeize, cxrfzhang}@foxmail.com
-# 
+#
 # Copyright (c) Megvii, Inc. and its affiliates. All Rights Reserved
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 #
 from itertools import count
+
 import torch
 import torch.nn as nn
-from torch.nn.parallel import DistributedDataParallel
-
-from detectron2.modeling import GeneralizedRCNNWithTTA, DatasetMapperTTA
+from detectron2.modeling import DatasetMapperTTA, GeneralizedRCNNWithTTA
 from detectron2.modeling.roi_heads.fast_rcnn import fast_rcnn_inference_single_image
-from detectron2.structures import Instances, Boxes
+from detectron2.structures import Boxes, Instances
+from torch.nn.parallel import DistributedDataParallel
 
 
 class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
     """
-        A DiffusionDet with test-time augmentation enabled.
-        Its :meth:`__call__` method has the same interface as :meth:`DiffusionDet.forward`.
+    A DiffusionDet with test-time augmentation enabled.
+    Its :meth:`__call__` method has the same interface as :meth:`DiffusionDet.forward`.
     """
 
     def __init__(self, cfg, model, tta_mapper=None, batch_size=3):
         """
-            Args:
-                cfg (CfgNode):
-                model (DiffusionDet): a DiffusionDet to apply TTA on.
-                tta_mapper (callable): takes a dataset dict and returns a list of
-                    augmented versions of the dataset dict. Defaults to
-                    `DatasetMapperTTA(cfg)`.
-                batch_size (int): batch the augmented images into this batch size for inference.
+        Args:
+            cfg (CfgNode):
+            model (DiffusionDet): a DiffusionDet to apply TTA on.
+            tta_mapper (callable): takes a dataset dict and returns a list of
+                augmented versions of the dataset dict. Defaults to
+                `DatasetMapperTTA(cfg)`.
+            batch_size (int): batch the augmented images into this batch size for inference.
         """
         # fix the issue: cannot assign module before Module.__init__() call
         nn.Module.__init__(self)
@@ -75,12 +75,15 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
                 output = self.model.forward(inputs, do_postprocess=False)[0]
                 if self.enable_scale_filter:
                     pred_boxes = output.get("pred_boxes")
-                    keep = self.filter_boxes(pred_boxes.tensor, *self.scale_ranges[idx // factors])
+                    keep = self.filter_boxes(
+                        pred_boxes.tensor, *self.scale_ranges[idx // factors]
+                    )
                     output = Instances(
                         image_size=output.image_size,
                         pred_boxes=Boxes(pred_boxes.tensor[keep]),
                         pred_classes=output.pred_classes[keep],
-                        scores=output.scores[keep])
+                        scores=output.scores[keep],
+                    )
                 outputs.extend([output])
             else:
 
@@ -116,12 +119,18 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
         orig_shape = (input["height"], input["width"])
         augmented_inputs, tfms = self._get_augmented_inputs(input)
         # Detect boxes from all augmented versions
-        all_boxes, all_scores, all_classes = self._get_augmented_boxes(augmented_inputs, tfms)
+        all_boxes, all_scores, all_classes = self._get_augmented_boxes(
+            augmented_inputs, tfms
+        )
         # merge all detected boxes to obtain final predictions for boxes
         if self.enable_cvpods_tta:
-            merged_instances = self._merge_detections_cvpods_tta(all_boxes, all_scores, all_classes, orig_shape)
+            merged_instances = self._merge_detections_cvpods_tta(
+                all_boxes, all_scores, all_classes, orig_shape
+            )
         else:
-            merged_instances = self._merge_detections(all_boxes, all_scores, all_classes, orig_shape)
+            merged_instances = self._merge_detections(
+                all_boxes, all_scores, all_classes, orig_shape
+            )
 
         return {"instances": merged_instances}
 
@@ -145,14 +154,19 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
 
         return merged_instances
 
-    def _merge_detections_cvpods_tta(self, all_boxes, all_scores, all_classes, shape_hw):
+    def _merge_detections_cvpods_tta(
+        self, all_boxes, all_scores, all_classes, shape_hw
+    ):
         all_scores = torch.tensor(all_scores).to(all_boxes.device)
         all_classes = torch.tensor(all_classes).to(all_boxes.device)
 
         all_boxes, all_scores, all_classes = self.merge_result_from_multi_scales(
-            all_boxes, all_scores, all_classes,
-            nms_type="soft_vote", vote_thresh=0.65,
-            max_detection=self.max_detection
+            all_boxes,
+            all_scores,
+            all_classes,
+            nms_type="soft_vote",
+            vote_thresh=0.65,
+            max_detection=self.max_detection,
         )
 
         all_boxes = Boxes(all_boxes)
@@ -165,7 +179,13 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
         return result
 
     def merge_result_from_multi_scales(
-            self, boxes, scores, labels, nms_type="soft-vote", vote_thresh=0.65, max_detection=100
+        self,
+        boxes,
+        scores,
+        labels,
+        nms_type="soft-vote",
+        vote_thresh=0.65,
+        max_detection=100,
     ):
         boxes, scores, labels = self.batched_vote_nms(
             boxes, scores, labels, nms_type, vote_thresh
@@ -187,7 +207,9 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
         offsets = labels.reshape(-1, 1) * max_coordinates
         boxes = boxes + offsets
 
-        boxes, scores, labels = self.bbox_vote(boxes, scores, labels, vote_thresh, vote_type)
+        boxes, scores, labels = self.bbox_vote(
+            boxes, scores, labels, vote_thresh, vote_type
+        )
         boxes -= labels.reshape(-1, 1) * max_coordinates
 
         return boxes, scores, labels
@@ -210,8 +232,8 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
             yy1 = torch.max(det[0, 1], det[:, 1])
             xx2 = torch.min(det[0, 2], det[:, 2])
             yy2 = torch.min(det[0, 3], det[:, 3])
-            w = torch.clamp(xx2 - xx1, min=0.)
-            h = torch.clamp(yy2 - yy1, min=0.)
+            w = torch.clamp(xx2 - xx1, min=0.0)
+            h = torch.clamp(yy2 - yy1, min=0.0)
             inter = w * h
             iou = inter / (area[0] + area[:] - inter)
 
@@ -240,7 +262,9 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
         vote_det[:, :4] *= vote_det[:, 4:5].repeat(1, 4)
         max_score = vote_det[:, 4].max()
         det_accu_sum = torch.zeros((1, 6), device=vote_det.device)
-        det_accu_sum[:, :4] = torch.sum(vote_det[:, :4], dim=0) / torch.sum(vote_det[:, 4])
+        det_accu_sum[:, :4] = torch.sum(vote_det[:, :4], dim=0) / torch.sum(
+            vote_det[:, 4]
+        )
         det_accu_sum[:, 4] = max_score
         det_accu_sum[:, 5] = vote_det[0, 5]
         return det_accu_sum
@@ -248,7 +272,7 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
     @staticmethod
     def get_soft_dets_sum(vote_det, vote_det_iou):
         soft_vote_det = vote_det.detach().clone()
-        soft_vote_det[:, 4] *= (1 - vote_det_iou)
+        soft_vote_det[:, 4] *= 1 - vote_det_iou
 
         INFERENCE_TH = 0.05
         soft_index = torch.where(soft_vote_det[:, 4] >= INFERENCE_TH)[0]
@@ -257,7 +281,9 @@ class DiffusionDetWithTTA(GeneralizedRCNNWithTTA):
         vote_det[:, :4] *= vote_det[:, 4:5].repeat(1, 4)
         max_score = vote_det[:, 4].max()
         det_accu_sum = torch.zeros((1, 6), device=vote_det.device)
-        det_accu_sum[:, :4] = torch.sum(vote_det[:, :4], dim=0) / torch.sum(vote_det[:, 4])
+        det_accu_sum[:, :4] = torch.sum(vote_det[:, :4], dim=0) / torch.sum(
+            vote_det[:, 4]
+        )
         det_accu_sum[:, 4] = max_score
         det_accu_sum[:, 5] = vote_det[0, 5]
 

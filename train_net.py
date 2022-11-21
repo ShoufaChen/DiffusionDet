@@ -11,41 +11,60 @@ DiffusionDet Training Script.
 This script is a simplified version of the training script in detectron2/tools.
 """
 
-import os
 import itertools
-import weakref
-from typing import Any, Dict, List, Set
 import logging
+import os
+import weakref
 from collections import OrderedDict
-
-import torch
-from fvcore.nn.precise_bn import get_bn_modules
+from typing import Any, Dict, List, Set
 
 import detectron2.utils.comm as comm
-from detectron2.utils.logger import setup_logger
+import torch
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_train_loader
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch, create_ddp_model, \
-    AMPTrainer, SimpleTrainer, hooks
+from detectron2.engine import (
+    AMPTrainer,
+    DefaultTrainer,
+    SimpleTrainer,
+    create_ddp_model,
+    default_argument_parser,
+    default_setup,
+    hooks,
+    launch,
+)
 from detectron2.evaluation import COCOEvaluator, LVISEvaluator, verify_results
-from detectron2.solver.build import maybe_add_gradient_clipping
 from detectron2.modeling import build_model
+from detectron2.solver.build import maybe_add_gradient_clipping
+from detectron2.utils.logger import setup_logger
+from fvcore.nn.precise_bn import get_bn_modules
 
-from diffusiondet import DiffusionDetDatasetMapper, add_diffusiondet_config, DiffusionDetWithTTA
-from diffusiondet.util.model_ema import add_model_ema_configs, may_build_model_ema, may_get_ema_checkpointer, EMAHook, \
-    apply_model_ema_and_restore, EMADetectionCheckpointer
+from diffusiondet import (
+    DiffusionDetDatasetMapper,
+    DiffusionDetWithTTA,
+    add_diffusiondet_config,
+)
+from diffusiondet.util.model_ema import (
+    EMADetectionCheckpointer,
+    EMAHook,
+    add_model_ema_configs,
+    apply_model_ema_and_restore,
+    may_build_model_ema,
+    may_get_ema_checkpointer,
+)
 
 
 class Trainer(DefaultTrainer):
-    """ Extension of the Trainer class adapted to DiffusionDet. """
+    """Extension of the Trainer class adapted to DiffusionDet."""
 
     def __init__(self, cfg):
         """
         Args:
             cfg (CfgNode):
         """
-        super(DefaultTrainer, self).__init__()  # call grandfather's `__init__` while avoid father's `__init()`
+        super(
+            DefaultTrainer, self
+        ).__init__()  # call grandfather's `__init__` while avoid father's `__init()`
         logger = logging.getLogger("detectron2")
         if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
             setup_logger()
@@ -65,7 +84,7 @@ class Trainer(DefaultTrainer):
 
         ########## EMA ############
         kwargs = {
-            'trainer': weakref.proxy(self),
+            "trainer": weakref.proxy(self),
         }
         kwargs.update(may_get_ema_checkpointer(cfg, model))
         self.checkpointer = DetectionCheckpointer(
@@ -107,7 +126,7 @@ class Trainer(DefaultTrainer):
         """
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        if 'lvis' in dataset_name:
+        if "lvis" in dataset_name:
             return LVISEvaluator(dataset_name, cfg, True, output_folder)
         else:
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
@@ -138,14 +157,16 @@ class Trainer(DefaultTrainer):
             # detectron2 doesn't have full model gradient clipping now
             clip_norm_val = cfg.SOLVER.CLIP_GRADIENTS.CLIP_VALUE
             enable = (
-                    cfg.SOLVER.CLIP_GRADIENTS.ENABLED
-                    and cfg.SOLVER.CLIP_GRADIENTS.CLIP_TYPE == "full_model"
-                    and clip_norm_val > 0.0
+                cfg.SOLVER.CLIP_GRADIENTS.ENABLED
+                and cfg.SOLVER.CLIP_GRADIENTS.CLIP_TYPE == "full_model"
+                and clip_norm_val > 0.0
             )
 
             class FullModelGradientClippingOptimizer(optim):
                 def step(self, closure=None):
-                    all_params = itertools.chain(*[x["params"] for x in self.param_groups])
+                    all_params = itertools.chain(
+                        *[x["params"] for x in self.param_groups]
+                    )
                     torch.nn.utils.clip_grad_norm_(all_params, clip_norm_val)
                     super().step(closure=closure)
 
@@ -210,7 +231,9 @@ class Trainer(DefaultTrainer):
 
         ret = [
             hooks.IterationTimer(),
-            EMAHook(self.cfg, self.model) if cfg.MODEL_EMA.ENABLED else None,  # EMA hook
+            EMAHook(self.cfg, self.model)
+            if cfg.MODEL_EMA.ENABLED
+            else None,  # EMA hook
             hooks.LRScheduler(),
             hooks.PreciseBN(
                 # Run at the same freq as (but before) evaluation.
@@ -229,7 +252,11 @@ class Trainer(DefaultTrainer):
         # This is not always the best: if checkpointing has a different frequency,
         # some checkpoints may have more precise statistics than others.
         if comm.is_main_process():
-            ret.append(hooks.PeriodicCheckpointer(self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
+            ret.append(
+                hooks.PeriodicCheckpointer(
+                    self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD
+                )
+            )
 
         def test_and_save_results():
             self._last_eval_results = self.test(self.cfg, self.model)
@@ -267,11 +294,13 @@ def main(args):
         model = Trainer.build_model(cfg)
         kwargs = may_get_ema_checkpointer(cfg, model)
         if cfg.MODEL_EMA.ENABLED:
-            EMADetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR, **kwargs).resume_or_load(cfg.MODEL.WEIGHTS,
-                                                                                              resume=args.resume)
+            EMADetectionCheckpointer(
+                model, save_dir=cfg.OUTPUT_DIR, **kwargs
+            ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
         else:
-            DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR, **kwargs).resume_or_load(cfg.MODEL.WEIGHTS,
-                                                                                           resume=args.resume)
+            DetectionCheckpointer(
+                model, save_dir=cfg.OUTPUT_DIR, **kwargs
+            ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
         res = Trainer.ema_test(cfg, model)
         if cfg.TEST.AUG.ENABLED:
             res.update(Trainer.test_with_TTA(cfg, model))
